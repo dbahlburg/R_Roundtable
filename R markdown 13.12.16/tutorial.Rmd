@@ -1,0 +1,108 @@
+---
+title: "R markdown Tutorial"
+author: "Doro Hodapp"
+date: "12 December 2016"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setup  
+To use R markdown you first need to install the two packages *rmarkdown* and *knitr*.  
+If you want to be able to producde pdf documents additional to html and word documents in R markdown
+you also need to install TeX on your computer. You can download it [here](http://www.chip.de/downloads/Texmaker_59803268.html).    
+  
+Once you have installed the packages go to File -> New File -> R markdown. Specifiy the type of document you want to produce and click **OK**.  
+
+## R Markdown
+
+Plain text  
+End a line with two spaces to end a paragraph.  
+You can use different styles, e.g. *italics* or alternatively _italics_
+or write something in **bold**, or alternatively use __bold__.  
+You can use superscripts^2^  
+or ~~strikethrough~~  
+or include a link to a webpage like this link to the [Rstudio](www.rstudio.com) site.  
+
+You can also use a hierarchical system of headers:
+
+# Header 1  
+##  Header 2  
+###  Header 3  
+####  Header 4  
+#####  and so on.  
+  
+endash: --       
+emdash: ---  
+ellipsis: ...  
+
+inline equation: $A = \pi*r^{2}$  
+embed and image like this check mark:   
+![](Check mark.png)  
+
+horizontal rule (or slide break):
+
+***  
+  
+>block quote indicated by a line on the side highlighting all lines included in your block quote
+  
+Include ordered or unordered lists of itmes and subitems, but be sure to leave an empty line before your list otherwise it won't show up.  
+  
+  * unordered list  
+  * item 2  
+    + sub-item 1  
+    + sub-item 2  
+    
+      
+      
+  1. numbered item 2  
+  2. numbered item 2  
+    + sub-item 1  
+    + sub-item 2  
+    
+    
+ 
+  
+Include simple tables:  
+  
+Table Header | Second Header  
+------------ | -------------  
+Table cell   | Cell 2  
+Cell 3       | Cell 4  
+
+    
+You can also inlude so called chunks of R code to load and manipulate data or run analyses by typing 
+three back ticks followed by an r in braces. R will then include the code itself or only the output in the output document depending on what you specify in the braces:  
+
+```{r}
+paste("Hello", "World!")
+summary(cars)
+```
+
+
+## Inline code
+
+You can include inline code by surrounding code with back ticks and r.
+R will then replace inline code with its results.
+
+```{r}
+A=c(3,4,5,7,7,4,3,3,5,5,6,6)
+
+```
+
+Example: The variance of A is `r round(var(A),2)`
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE, fig.align='center',fig.height=5, fig.width=6, }
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+Good resources are the R markdown cheatsheet and the R markdown reference guide which you can find in recent R studio versions under Help > Cheatsheets and under this [link](http://yihui.name/knitr/).
