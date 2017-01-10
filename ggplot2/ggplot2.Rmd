@@ -1,0 +1,205 @@
+---
+title: ""
+author: "Dominik Bahlburg"
+date: "January 8, 2017"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 5
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### A short introduction to the package ggplot2
+
+What is ggplot?: 
+
+* package written by Hadley Wickham 
+* based on 'Grammar of Graphics' by [Wilkinson 2005](https://www.amazon.de/Grammar-Graphics-Statistics-Computing/dp/0387245448) - a tool that enables us to concisely describe the components of a graphic
+* idea: layer-based system that starts with the raw data and adds stats, annnotations etc. as new layers to the plot
+* or in Wickham's words: [“In brief, the grammar tells us that a statistical graphic is a mapping from data to aesthetic attributes (colour, shape, size) of geometric objects (points, lines, bars). The plot may also contain statistical transformations of the data and is drawn on a specific coordinates system.”](http://moderngraphics11.pbworks.com/f/ggplot2-Book09hWickham.pdf)
+
+#### How to make a basic plot:  
+```{r 1, echo=T, fig.width=5, fig.height=3}
+library(ggplot2)
+iris_test <- iris
+head(iris_test)
+ggplot(data=iris_test,aes(x=Sepal.Length, y=Sepal.Width, colours = factor(Species)))
+```
+  
+As you can see, you don't see anything... The reason is that so far we only specified **WHAT** we want to plot (aesthetics) and not **HOW** we want to plot it (geometric objects such as dots, lines, polygons or whatever). We do this by adding a **geom_** - layer:
+
+##### Lineplot
+```{r 2, echo=T, fig.width=5, fig.height=3}
+ggplot(data=iris_test,aes(x=Sepal.Length, y=Sepal.Width, colour = factor(Species))) +
+  geom_line()
+```
+  
+##### Boxplot 
+```{r 3, echo=T, fig.width=5, fig.height=3}
+ggplot(data=iris_test,aes(x=Species, y=Sepal.Width, fill = factor(Petal.Width))) +
+  geom_boxplot()
+```
+  
+##### Scatterplot
+```{r 4, echo=T, fig.width=5, fig.height=3}
+ggplot(data=iris_test,aes(x=Sepal.Length, y=Sepal.Width, colour = factor(Species), size = Petal.Width)) +
+  geom_point() +
+ labs(x="Sepal Length (cm)", y="Sepal Width (cm)", col="Species", title="Iris Dataset")
+```
+  
+##### Heatmap
+```{r 5, echo=T, fig.width=5, fig.height=3}
+ggplot(data=faithfuld,aes(x=waiting, y=eruptions)) +
+  geom_raster(aes(fill=density),interpolate=T) 
+```  
+  
+##### Facet plots  
+```{r 12, echo=T, fig.width=5, fig.height=3}
+#facet_wrap allows us to plot our data in seperate subplots, sorted by a factor. 
+ggplot(data=iris_test,aes(x=Sepal.Length, y=Sepal.Width)) +
+  geom_point() +
+  facet_wrap(~Species)
+```  
+  
+#### How to change  
+#####colours
+Not happy with the colours?
+There are multiple ways to change that: 
+```{r 6, echo=T, fig.width=5, fig.height=3}
+#Define a vector of colours (in this case hex-codes to define them very precisely)
+myColors <- c("#56ddc5", "#ff3db7", "#4699dd")
+ggplot(data=iris_test,aes(x=Sepal.Length, y=Sepal.Width, colour = factor(Species))) +
+  geom_point() +
+  scale_color_manual(values=myColors)
+
+#Use scale_colour_hue to create a colour gradient
+ggplot(data=iris_test,aes(x=Sepal.Length, y=Sepal.Width, colour = factor(Species))) +
+  geom_point() +
+  scale_colour_hue(h=c(0, 90))
+
+#You can also define a gradient by hand...
+#What is an advantage with this method is that you can define the colours more precisely via hex-codes
+colfunc <- colorRampPalette(c("#ff6f1d", "#7077df"))
+myColors <- colfunc(3)
+ggplot(data=iris_test,aes(x=Sepal.Length, y=Sepal.Width, colour = factor(Species))) +
+  geom_point() +
+ scale_color_manual(values=myColors)
+
+#or simply manipulate the lightness (l) and chroma/intensity (c) of the used colours
+ggplot(data=iris_test,aes(x=Sepal.Length, y=Sepal.Width, colour = factor(Species))) +
+  geom_point() +
+ scale_color_hue(l=50, c=60)
+```
+  
+##### size 
+  
+```{r 7, echo=T, fig.width=5, fig.height=3}
+#Change the symbol size to a fixed value
+ggplot(data=iris_test,aes(x=Sepal.Length, y=Sepal.Width, colour = factor(Species),size=3)) +
+  geom_point() 
+
+#Change the symbol size according to a value
+ggplot(data=iris_test,aes(x=Sepal.Length, y=Sepal.Width, colour = factor(Species),size=Petal.Length)) +
+  geom_point() 
+```
+
+##### shapes
+```{r 8, echo=T, fig.width=5, fig.height=3}
+#Change the symbol shape to a fixed one
+ggplot(data=iris_test,aes(x=Sepal.Length, y=Sepal.Width, colour = factor(Species))) +
+  geom_point(shape=12)
+
+#Change the symbol shape according to a factor
+ggplot(data=iris_test,aes(x=Sepal.Length, y=Sepal.Width)) +
+  geom_point(shape=factor(iris_test$Species)) 
+```
+  
+And there are countless other ways to achieve that...
+Check the ggthemr and ggthemes packages which facilitate making major changes in your plot layout.
+  
+  
+  
+#### Include stats in your plots:  
+##### Add linear regression to plot
+```{r 9, echo=T, fig.width=5, fig.height=3}
+#In case we want to add linear regression models to our scatterplot, simply add geom_smooth() to the ggplot. What we see as a grey shading around the regression lines is the predicted standard error. You can avoid that by adding se=F as an argument to geom_smooth
+ggplot(iris_test,aes(x=Sepal.Length, y=Sepal.Width, colour = factor(Species))) +
+  geom_point() + 
+  stat_smooth(method='lm')
+```
+  
+##### Adding mean lines  
+```{r 10, echo=T, fig.width=5, fig.height=3, message=F}
+#
+library(dplyr)
+means_iris <- iris_test %>%
+  group_by(.,Species)%>%
+  summarise(.,mean_sw=mean(Sepal.Width),sd_sw=sd(Sepal.Width))
+
+ggplot(data=iris_test,aes(x=Sepal.Length, y=Sepal.Width)) +
+  geom_point() +
+  facet_wrap(~Species) +
+  geom_hline(aes(yintercept=mean_sw),data=means_iris,colour='red')
+```  
+  
+##### mean+errorbar-plots  
+```{r 13, echo=T, fig.width=5, fig.height=3, message=F}
+#
+ggplot(data=means_iris,aes(x=Species, y=mean_sw,colour=factor(Species))) +
+  geom_point() +
+  geom_errorbar(aes(ymin = mean_sw-sd_sw, ymax=mean_sw+sd_sw),width=.3) 
+```  
+  
+#### How to add data from 2 different dataframes
+```{r 14, echo=T, fig.width=5, fig.height=3, message=F}
+#you can add the second dataset as a geom_point-layer
+#problem: works only if both datasets have the same lengths
+data1 <- as.data.frame(cbind(c(-20:20),c(-20:20)^2))
+data2 <- as.data.frame(cbind(c(-20:20),c(-20:20)*3+200))
+
+ggplot(data=data1,aes(x=V1, y=V2)) +
+  geom_point() +
+  geom_point(aes(x = data2$V1,y=data2$V2),colour=2)
+
+#for cleaner code try to combine the dataframes if possible
+#advantage: automatically generated legend, datasets can differ in length...
+data1 <- as.data.frame(cbind(c(-20:20),c(-20:20)^2))
+data2 <- as.data.frame(cbind(c(-18:18),c(-18:18)*3+200))
+data3 <- rbind(data1,data2)
+data3$source <- as.factor(c(rep('data1',length(data1$V1)),rep('data2',length(data2$V1))))
+ggplot(data=data3,aes(x=V1,y=V2,colour=source))+
+  geom_point()
+```  
+  
+  
+#### How to save your plot
+To make your work easily reproducible you should try to avoid saving your plots via clicking "Export","Save Plot"...  
+A better solution is to use functions such as ggsave!
+```{r 11, echo=T, fig.width=5, fig.height=3}
+plot1 <- ggplot(data=iris_test,aes(x=Sepal.Length, y=Sepal.Width, colour = factor(Species))) +
+  geom_point()
+ggsave('plot1.png',plot=plot1,width=6,height=4)
+```
+This saves your plot "plot1" as a png-file (or whatever format you want) in your current working directory. You can also specify a specific directory where the plot should be saved (e.g. ggsave('/Users/maxmustermann/plot1.png',...). The arguments width and height determine the width and height of the plot (which is 600x400 pixel in our case).
+  
+#### Some cool stuff
+```{r 16, message=F, warning=F}
+sites <- read.csv("sites.csv", sep=" ", dec=".")
+#This is just to show you what ggplot is capable of doing...
+#Here we plot a simple map via ggmap to quickly visualize a few sites where samples for a study were taken
+#Additionally, we use the package ggrepel to avoid overlapping of the station labels. This is extremely helpful since ggplot is not able to do that by itself. 
+library(ggrepel)
+library(ggmap)
+#Define borders for the map (min lon, min lat, max lon, max lat)
+antarctica_coords<-c(-62, -65, -52, -60)
+#we download a map from the google server. You can choose between multiple sources such as OpenStreetMap...
+antarctica<-get_map(location=antarctica_coords,source="google",maptype="roadmap", crop=FALSE)
+
+ggmap(antarctica)+
+  geom_point(data=sites,aes(x=Longitude, y=Latitude),cex=0.25)+
+  geom_text_repel(data=sites,aes(x=Longitude,y=Latitude,label = station,vjust=0.1,force=2)) +
+  labs(x='Longitude',y='Latitude')
+```

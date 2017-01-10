@@ -2,7 +2,7 @@
 title: "R markdown Tutorial"
 author: "Doro Hodapp"
 date: "12 December 2016"
-output: pdf_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
