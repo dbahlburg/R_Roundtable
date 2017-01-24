@@ -11,7 +11,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
+***  
 #### A short introduction to the package ggplot2
 
 What is ggplot?: 
@@ -19,13 +19,16 @@ What is ggplot?:
 * package written by Hadley Wickham 
 * based on 'Grammar of Graphics' by [Wilkinson 2005](https://www.amazon.de/Grammar-Graphics-Statistics-Computing/dp/0387245448) - a tool that enables us to concisely describe the components of a graphic
 * idea: layer-based system that starts with the raw data and adds stats, annnotations etc. as new layers to the plot
-* or in Wickham's words: [“In brief, the grammar tells us that a statistical graphic is a mapping from data to aesthetic attributes (colour, shape, size) of geometric objects (points, lines, bars). The plot may also contain statistical transformations of the data and is drawn on a specific coordinates system.”](http://moderngraphics11.pbworks.com/f/ggplot2-Book09hWickham.pdf)
+* or in Wickham's words: [“In brief, the grammar tells us that a statistical graphic is a mapping from data to aesthetic attributes (colour, shape, size) of geometric objects (points, lines, bars). The plot may also contain statistical transformations of the data and is drawn on a specific coordinates system.”](http://moderngraphics11.pbworks.com/f/ggplot2-Book09hWickham.pdf)  
+  
+  
 * useful links for ggplot:
-** [beautiful plotting with ggplot](http://zevross.com/blog/2014/08/04/beautiful-plotting-in-r-a-ggplot2-cheatsheet-3/#use-a-new-theme-theme_xx). This tutorial includes a list of all properties that can be defined the the "theme"-function. It will help you to edit or even create your own theme in ggplot!
-** [adding a second y-axis](http://docs.ggplot2.org/dev/sec_axis.html). This is part of the ggplot2-documentation and shows how to add a second y-axis to your plots
-** [official ggplot cheatsheet](https://www.rstudio.com/wp-content/uploads/2015/03/ggplot2-cheatsheet.pdf). The ggplot cheatsheet which is also uploaded to the repository and available in RStudio under Help -> Cheatsheets...
-** [Tidy Data](http://vita.had.co.nz/papers/tidy-data.pdf). This is the paper by Wickham, which tells you more about the concept of "tidy data", which facilitates plotting with ggplot!
-
+  1. [beautiful plotting with ggplot](http://zevross.com/blog/2014/08/04/beautiful-plotting-in-r-a-ggplot2-cheatsheet-3/#use-a-new-theme-theme_xx). This tutorial includes a list of all properties that can be defined the the "theme"-function. It will help you to edit or even create your own theme in ggplot!
+  1. [adding a second y-axis](http://docs.ggplot2.org/dev/sec_axis.html). This is part of the ggplot2-documentation and shows how to add a second y-axis to your plots
+  1. [official ggplot cheatsheet](https://www.rstudio.com/wp-content/uploads/2015/03/ggplot2-cheatsheet.pdf). The ggplot cheatsheet which is also uploaded to the repository and available in RStudio under Help -> Cheatsheets...
+  1. [Tidy Data](http://vita.had.co.nz/papers/tidy-data.pdf). This is the paper by Wickham, which tells you more about the concept of "tidy data", which facilitates plotting with ggplot!
+  
+*** 
 #### How to make a basic plot:  
 ```{r 1, echo=T, fig.width=5, fig.height=3}
 library(ggplot2)
