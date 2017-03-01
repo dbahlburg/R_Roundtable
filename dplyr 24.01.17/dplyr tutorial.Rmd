@@ -319,9 +319,11 @@ In order to connect two data tables we can sue the join() verbs:
 Type | Action  
 ------------ | -------------  
 inner   | include only rows in **both** data tables x and y 
-left       | include all of y , and matching rows of y
+left       | include all of x , and matching rows of y
 semi   | include rows of x that match y
 anti       | include rows of x that **don't** match y
+full     | retain all rows
+right    | include all of y, and matching rows of x
 
 ![](inner_join.png)
 ![](left_join.png)

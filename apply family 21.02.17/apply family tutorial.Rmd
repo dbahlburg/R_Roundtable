@@ -1,0 +1,293 @@
+---
+title: "apply family vs. loops tutorial"
+author: "Doro Hodapp"
+date: "21 January 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This session is about the use of apply functions and why their use is often recommended over the use of for-loops.  
+
+Let's first generate some data:  
+
+```{r generate training data, echo=T, warning=F, message=F}
+# generate training data
+# create a 5-by-5 matrix (2-dimensional array)
+# first argument: elements your matrix consists of, second argument: number of rows, third argument: number fo columns
+m <- matrix(1:25, 5, 5)  
+# note that matrices are by default (byrow=TRUE/FALSE) filled by columns
+
+# create a data frame containing station name and ID, temperature and precipitation measurements 
+# If you work with data frames, all variables must be of the same data type (e.g. numeric, string/ character) otherwise they will be converted which will likely mess up your results.
+
+df <- data.frame(Station = letters[1:20], ID = 1:20, temp_spring = rnorm(20,10,3), temp_summer= rnorm(20,20,3), temp_fall = rnorm(20,13,3), rain = rnorm(20,300, 150))
+
+
+# create a list containing 3 matrices
+A = matrix(c(1:9),3,3)
+B = matrix(c(11:19),3,3)
+C = matrix(c(4:12),3,3)
+
+mylist <- list(A,B,C)
+
+```
+
+
+
+## Quick introdcution to for-loops 
+
+### What is a loop?  
+A loop is a coding structure that reruns the same bit of code over and over again with only small fragments of code differing between runs.
+
+### When do we use for-loops?
+For-loops are used to repeatedly perform a certain operation on data. These data could be all rows or elements in a data frame, or any other data object such as lists or matrices, as long as you can index them.
+
+The for-loop will keep repeating its operation for all indeces that you specified.
+For example, you want to calculate the average temperature for each of the stations:
+
+
+```{r for-loop example, echo=T, warning=F, message=F}
+
+for (i in 1:nrow(df)){ # i is the index which will run from 1 to the number of rows in your data frame
+  df$temp_mean[i] = mean(df$temp_spring[i], df$temp_summer[i], df$temp_fall[i])
+}
+# after having executed the opertion on all elements indicated by the index variable 'i' R continues with running the code following the for-loop
+# show the df with the newly created variable
+head(df)
+```
+You probably already think, Hang on, didn't the dplyr package do stuff like this more easily with less coding? That's right and that is also the case for the apply functions which we'll have a look at in a minute.
+
+But first one more example: permutation test.   
+Suppose we have two groups A and B with sample means x~A~ and x~B~ and we want to test whether they come from the same distribution (significance level is 5%).The permutation test tells us whether the difference between the two samples is large enough to reject the null-hypothesis.  
+First, the difference in means between the two samples is calculated: this is the observed value of the test statistic, T(obs). Then the observations of groups A and B are pooled.  
+Next, the difference in sample means is calculated and recorded for every possible way of dividing these pooled values into two groups of size n~A~ and n~B~ (i.e. for every permutation of the group labels A and B). The set of these calculated differences is the exact distribution of possible differences under the null hypothesis that group label does not matter.
+The one-sided p-value of the test is calculated as the proportion of sampled permutations where the difference in means was greater than or equal to T(obs). The two-sided p-value of the test is calculated as the proportion of sampled permutations where the absolute difference was greater than or equal to ABS(T(obs)).  
+If the only purpose of the test is reject or not reject the null hypothesis, we can as an alternative sort the recorded differences, and then observe if T(obs) is contained within the middle 95% of them. If it is not, we reject the hypothesis of identical probability curves at the 5% significance level.
+
+
+
+```{r permutation test example, echo=T, warning=F, message=F}
+# create samples of the two groups A and B
+A = rnorm(20,11,4)
+B = rnorm(20,15,5)
+
+# ordinary two sample T-test since we know the two variables are normally distributed
+t.test(A,B)
+
+# in case they not normally distributed we could perform a permutation test like this
+# calculate the mean of A and B
+mA <-  mean(A)
+mB <- mean(B)
+
+# calculate difference between mena(A) and mean(B)
+diffAB <- abs(mA-mB)
+
+# combine A and B
+AB <- c(A,B)
+
+# run permutations (note: we're not doing all possible permutations here)
+perm_means <- data.frame()
+for (i in 1:1000){ 
+AB_perm <- sample(AB,length(AB), replace=F)
+  
+mean1 <- mean(AB_perm[1:20])
+mean2 <- mean(AB_perm[21:40])
+diff_means <- mean1-mean2
+
+perm_means <- rbind(perm_means, data.frame(mean1, mean2, diff_means))
+}
+
+# calculate proportion of mean differences that were greater or equal to the observed mean difference
+length(perm_means$diff_means[abs(perm_means$diff_means)>=diffAB])/1000
+
+```
+Of course there exist already implemented permutation tests in R, e.g. lmp(), aovp(), which do the job.
+
+
+### So why should we bother to know about for loops?  
+Running R code containing loops will take longer (depending on the size of the data set and the function you run on your data) than using apply functions for the same task. Nevertheless, for-loops have the advantage of being extremely flexible and there are many examples where using a for-loop might be the most adequate thing to achieve what you want from your data so having an understanding of what loops are and how they work is definitely helpful. 
+
+## Apply family
+### Definition of data object types   
+Before introducing the apply family here a quick overview of the basic data objects we deal with in R, because  the apply functions mainly differ in the type of input and output data types they use.
+
+* Data objects:
+    + scalar: a single number
+    + vector: indexed set of values that are all of the same type (e.g. numeric, integer, character, complex, logical, factor)
+    + array (matrix): matrix is two-dimensional, arrays can have more dimensions 
+    + data frame: more general than a matrix in that different columns can have different modes (numeric, character, factors..)
+    + list: ordered collection of objects, i.e. a list can contain elements of differing data types (e.g. vectors, matrices and data.frames in one list)
+
+
+### So what are the differences between the single apply functions?
+Here an overview of input and output data type and general use of apply functions.
+
+
+## Overview: Apply family
+
+
+function | input type | what the function sees as elements | output type  
+------------ | -------------  | ------------- |--------------
+apply     |matrix |rows or columns | vector, matrix, array, or list
+...      | array | rows, columns, or any dimension | vector, matrix, array, or list
+...      | data frame | rows or columns | vector, matrix, array, or list
+sapply   | vector| elements  | vector, matrix, or list
+...    | data frame | variables | vector, matrix, or list
+...    | list   | elements | vector, matrix, or list
+lapply       | vector  | elements | list
+...      | data frame | variables | list
+...      |  list   | elements | list
+
+
+ 
+
+Let's look at a few examples:
+
+
+#### apply()
+```{r apply example, echo=T, warning=F, message=F}
+# "apply" returns a vector or array or list of values obtained by applying
+#   a function to margins of an array or matrix.
+apply(m, 1, sum)
+apply(m, 2, mean)
+apply(m, 1:2, sqrt)
+
+# "sweep" returns an array obtained from an input array by sweeping out
+#   a summary statistic.
+# note that the default function to be performed is "-", change with e.g. FUN="+"
+(X = array(1:24, dim = 4:2))
+sweep(X, 1, apply(X, 1, mean))
+
+# "scale" is generic function whose default method centers and/or scales
+#   the columns of a numeric matrix.
+scale(m)
+apply(m, 2, mean)
+apply(m, 2, sd)
+cov(scale(m))
+
+```
+
+#### lapply()
+
+```{r lapply example, echo=T, warning=F, message=F}
+
+# "lapply" returns a list of the same length as X, each element of which is
+#   the result of applying FUN to the corresponding element of X.
+
+lapply(mylist, mean)
+
+
+```
+
+#### sapply()
+```{r sapply example, echo=T, warning=F, message=F}
+# "sapply" is a user-friendly version of lapply by default returning
+#   a vector or matrix if appropriate.
+sapply(mylist,mean)
+
+# another application example: extract the p-value from a list of linear model outputs
+x=c(1:20)
+y= 4*x + 3 + rnorm(20,5,3)
+z = -2*x + 3 + rnorm(20,1,3)
+v = 0.3*x + 2 + rnorm(20,1,6)
+
+data=data.frame(x=x,y=y,z=z,v=v)
+
+par(mfrow=c(3,1))
+plot(x,y)
+plot(x,z)
+plot(x,v)
+
+# create vector for your index variable
+response <- c("y","z","v")
+
+#create an empty list
+models <- list()
+for (i in 1:length(response)){
+  models[[i]] <- lm(paste(response[i]," ~ x",sep=""),data=data)
+}
+
+summary(models[[3]])
+# get the r squared value of the first model (response:y)
+round(summary(models[[3]])$r.squared,3)
+
+get.r.squared <- function(x) (round(summary(x)$r.squared,3))
+get.p.value <- function(x) (round(summary(x)$coefficients[2,4],3))
+
+
+sapply(models,function(x) round(summary(x)$r.squared,3))
+sapply(models, get.r.squared)
+sapply(models, get.p.value)
+```
+
+#### vapply()  
+For vapply, you basically give R an example of what sort of thing your function will return, which can save some time coercing returned values to fit in a single atomic vector.
+```{r vapply example, echo=T, warning=F, message=F}
+# "vapply" is similar to sapply, but has a pre-specified type of return value,
+#   so it can be safer (and sometimes faster) to use.
+vapply(1:5, sqrt, 1i) # complex number as output
+vapply(m, sum, 0L) # integer as output
+
+vapply(mylist, FUN = length, FUN.VALUE = 0L)
+```
+
+#### mapply()
+For when you have several data structures (e.g. vectors, lists) and you want to apply a function to the 1st elements of each, and then the 2nd elements of each, etc., coercing the result to a vector/array as in sapply.
+```{r mapply example, echo=T, warning=F, message=F}
+# "mapply" is a multivariate version of sapply. mapply applies FUN to
+#   the first elements of each ... argument, the second elements,
+#   the third elements, and so on. Arguments are recycled if necessary.
+mapply(rep, LETTERS[1:3], 1:3)
+#Sums the 1st elements, the 2nd elements, etc. 
+mapply(sum, 1:5, 1:5, 1:5)
+
+
+
+# "Vectorize" returns a new function that acts as if mapply was called.
+vrep = Vectorize(rep)
+vrep(LETTERS[1:3], 1:3)
+vrep = Vectorize(rep.int)
+vrep(LETTERS[1:3], 1:3)
+
+```
+
+#### tapply()
+Use this when you want to apply a function to subsets of a vector and the subsets are defined by some other vector, usually a factor.
+
+The black sheep of the apply family, of sorts. The help file's use of the phrase "ragged array" can be a bit confusing, but it is actually quite simple.
+```{r tapply example, echo=T, warning=F, message=F}
+# "tapply" applies a function to each cell of a ragged array, that is
+#   to each (non-empty) group of values given by a unique combination of
+#   the levels of certain factors.
+(m = matrix(1:6, 2, 3))
+(fac = matrix(c(1,3,1,2,2,2), 2, 3))
+tapply(m, fac, sum)
+
+# another example
+x <- 1:20
+y <- factor(rep(letters[1:5], each = 4))
+tapply(x, y, sum)
+
+```
+
+#### and for completeness: eapply()
+```{r eapply example, echo=T, warning=F, message=F}
+# "eapply" applies FUN to the named values from an environment and returns
+#   the results as a list. The user can request that all named objects
+#   are used (normally names that begin with a dot are not). The output
+#   is not sorted and no parent environments are searched.
+env = new.env()
+env$x = 1:3
+env$y = 4:6
+eapply(env, sum)
+```
+
+
+
+
+
+Under [this link](https://nicercode.github.io/guides/repeating-things/) you can find mor einformation and useful tips on the use of for-loops vs apply functions. 
+
