@@ -1,0 +1,174 @@
+---
+title: "rmANOVA"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# R Markdown: rmANOVA
+
+#### *"Repeated Measures ANOVA is a can of worms."* 
+#####*(Tom Andersen, personal communication)*
+
+#### YES.
+
+
+## What is a rmANOVA and when do I use it?
+
+The rm stands for repeated measure, meaning that you analyze data, that was obtained either by sampling the same thing multiple times consequtively. Or you tested something under multiple conditions. For example you sample an experiment over the duration of the experiment. Or you test behavior of people and let them all do something (e.g. write with fountain pens, pencils and crayons) - in both cases you get covariance because it is always the same people/experimental units that are tested/sampled.
+
+So like with any ANOVA you have to ensure independence between groups or treatments (homogeneity of variance), but in a repeated measure ANOVA you also have to look at sphericity, which is approximately the homogeneity of variance within a group.
+
+Our example response variable will be Species Richness. This is what it looks like plotted over time:
+
+## Data Plot
+
+```{r, echo=FALSE}
+data <- read.csv("C:/Users/Laura/Desktop/UNi/ms2/planktodiversa-roundtable.csv", sep=";", dec=",")
+
+data$Group <- paste(data$temperature, data$nutrients)
+
+data[, "Group"] <- data$Group
+
+library(plyr)
+rich_data <- ddply(data, c("Day", "Group"), summarise,
+               N    = length(rich),
+               mean = mean(rich),
+               sd   = sd(rich),
+               se   = sd / sqrt(N))
+
+library(ggplot2)
+
+limits <- aes(ymax = mean + se, ymin=mean - se)
+
+
+p3 <- ggplot(rich_data, aes(Day, mean, group=Group))+
+  geom_point(size = 7, aes(fill=factor(Group), shape=factor(Group)))+
+  scale_shape_manual(values=c(21, 22, 23, 24))+
+  scale_fill_manual(values=c("grey90", "grey50", "grey25", "grey5"))+
+  geom_errorbar(limits, width=2)+
+  geom_line(size=1, aes(linetype=Group))+
+  scale_linetype_manual(values=c("dotted", "dashed", "twodash", "solid"))+
+  xlab("Time [days]")+
+  ylab("Species Richness")+
+  theme_bw()+
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.background=element_rect(fill="white"),
+    panel.border=element_rect(colour="black", fill=NA, size=0.2),   
+    strip.text=element_text(size=36))+
+  theme(axis.text.x=element_text(size=26))+
+  theme(axis.text.y=element_text(size=26))+
+  theme(axis.title.x=element_text(size=34))+
+  theme(axis.title.y=element_text(size=34))+
+  theme(legend.position="none")
+p3
+```
+
+Legend: 
+
+circle = control 
+
+square = Nutrient decrease 
+
+diamond = Warming 
+
+triangle = nutrient Decrease + Warming
+
+
+
+Short description of the experiment: 
+We have two factors as treatments: 
+1.) Gradual Warming 
+2.) Nutrient Decrease
+
+Additionally we have an untreated control and an interaction treatment with both warming and nutrient decrease.
+
+Each setup has three replicates and was measured seven times.
+
+Note: I'm not certain if you can apply a rmANOVA if you have unequal intervals. I think yes. No guarantees.
+
+## ANALYSIS
+
+## Important things:
+
+1. We will use the ez-package to calculate the rmANOVA. While it is possible to use the anova()-function, it's painful AND doesn't give additional tests we need. While it is in theory also possible to run with aov() I have not yet been able to get it to work.
+
+2. rmANOVA can't handle missing values or otherwise unbalanced datasets. So you can either "invent" the missing data by interpolation, or use Linear Mixed Effect (LME) Models. While I can do the former, I have zero idea about the latter. Sorry.
+
+3. To work best (or at all), you should structure your data in the following way. Both Time and Experimental Units/Replicates should be (converted to) factors!
+
+
+```{r, echo=FALSE}
+
+data[1:15,1:9]
+
+```
+
+
+
+
+
+## Pre-test: Homogeneity of Variance (between subject variation):
+
+```{r, echo=TRUE}
+bartlett.test(rich ~ interaction(temperature, nutrients), data=data) 
+```
+
+If this is significant, you need to transform the data, for example through log-transformation or some such, until you reach Homogeneity of Variance indicated by a non-significant Bartlett's test.
+
+# the actual repeated measure ANOVA:
+
+```{r, echo=TRUE}
+library(ez)
+
+data$Day<-as.factor(data$Day)
+data$Exp.Unit<-as.factor(data$Exp.Unit)
+
+rt_anova_rich <- ezANOVA(
+  data = data #datafile
+  , dv = rich #response variable of interest
+  , wid = Exp.Unit #identifier of replicates (must be individual!)
+  , within = Day #time or in whatever form you repeat your measurements
+  , between = .(temperature,nutrients) #factors (can be one only)
+)
+print(rt_anova_rich)
+```
+
+
+### Mauchly's Test of Sphericity (within subject variation)
+
+See again output of rmANOVA
+
+Sphericity is the equality of differences between treatment levels. To assess it, you calculate the differences between pairs of scores in all combinations of the treatment levels. If sphericity is violated (**Mauchly's test is significant**), the original degrees of freedom and hence the critical F-values are not valid, and need to be corrected to obtain p-values.
+
+Chose either Greenhouse-Geisser (more conservative) or Huynh-Feldt (less conservative), or the average of the two. I recommend the Greenhouse-Geisser, but no guarantees.
+
+Report as within-subject and between subject test.
+
+
+| Factor              | dfN | dfD | Richness          |
+|---------------------|-----|-----|-------------------|
+| Transformation      |     |     | none              |
+| Between subject     |     |     |                   |
+| Temperature         | 1   | 8   | 9.6 (0.014)       |
+| Nutrients           | 1   | 8   | 3.91 (0.08)       |
+| Temp*Nutrients      | 1   | 8   | 3.58  (0.09)      |
+| Within Subject      |     |     |                   |
+| Time                | 5   | 40  |   ditto           |
+| Time*Temperature    | 5   | 40  |   idem            |
+| Time*Nutrients      | 5   | 40  |      ...          |
+| Time*Temp*Nutrients | 5   | 40  |           ...     |
+
+
+It just occurred to me today that maybe then one should report the corrected degrees of freedom, but I've never done that and I have no idea. Thoughts?
+
+
+
+###Thanks for your attention!
