@@ -1,0 +1,95 @@
+library(reshape2)
+library(corrplot)
+library(nortest)
+
+rm(list=ls(all=T))
+setwd("")
+
+mat1 = read.delim2("") # Matrix 1: numerical Response Variables. Sites/Replicates etc in Columns
+mat2 = read.delim("", row.names = 1) # Matrix 2: with corresponding numerical explanatory variables 
+
+mat1_names = colnames(mat1)
+mat2_names = colnames(mat2)
+
+############################################ Anderson-Darling Normality Test #################
+# With "nortest" you can test your data for normality, which can guide your decision of the correlation measure.
+
+cat("Data\tp-value\n")
+for(i in 1:length(mat1))
+{
+  x = mat1[,i]
+  j = ad.test(x)
+  cat(mat1_names[i], "\t", j$p.value, "\n")
+  
+}
+############################################ Correlation Test ################################
+dir.create("Correlations")
+setwd("~/Correlations")
+
+# Liniear relationships: Pearsons correlation
+# monotonic (nonlinear) relationships: Spearmans rho
+# also consider your sample size. If you have only a small sample size consider using spearman rather than pearson
+
+
+##### Full Cor. Table
+sink("Correlation_table.txt") # File in which all the console output will be saved
+cat("Group\tParameter\tPearson Correlation\tp-value\n") # Columnames for the file "\t" = tabstop
+for(i in 1:length(mat1)) # Response variable a to b tested against ... (in mat1)
+{
+  x = mat1[,i]
+  
+  for(j in 1:length(mat2)) # ...expnanatory parameters in columns from x to y (in mat2)
+    {
+    y = mat2[,j]
+    
+    cor = cor.test(x = x, y = y, method = "pearson")
+ 
+    cat(mat1_names[i], "\t", mat2_names[j], "\t", cor$estimate,"\t", cor$p.value, "\n")
+       
+    }
+ }
+sink()
+
+cor.full = read.delim("Correlation_table.txt")
+
+# P value adjustment for multiple testing operations. "?p.adjust" for available methods! 
+cor.full$p.adj = p.adjust(cor.full$p.value, method = "BH")
+
+# List Conversion + plot
+# you might have to change to adjusted/undjusted p value. default = adjusted
+
+cor = cor.full[,-c(4:5)]
+cor = as.data.frame(dcast(cor, Group~Parameter))
+cor.names = cor[,1]
+row.names(cor) = cor.names
+cor = as.matrix(cor[,-1])
+pval = cor.full[,-c(3:4)]
+pval = as.data.frame(dcast(pval, Group~Parameter))
+pval.names = pval[,1]
+pval = as.matrix(pval[,-1])
+row.names(pval) = pval.names
+
+corrplot(cor, p.mat = pval, sig.level = 0.05,insig = "blank", method="ellipse",
+         addCoef.col = 1, tl.col=1, tl.cex=.8, cl.offset = 2, number.cex = .4, is.corr = F, main = "mat1 vs. mat2") 
+
+
+
+##### Cor table with significant correlations only
+sink("Correlation_table_p005.txt") 
+cat("Group\tParameter\tPearson Correlation\tp-value\n") 
+for(i in 1:length(mat1)) 
+{
+  x = mat1[,i]
+  
+  for(j in 1:length(mat2))
+  {
+    y = mat2[,j]
+    
+    cor = cor.test(x = x, y = y, method = "pearson")
+    if(cor$p.value <= 0.05){
+      cat(mat1_names[i], "\t", mat2_names[j], "\t", cor$estimate,"\t", cor$p.value, "\n")
+    }
+  }
+}
+sink()
+cor.short = read.delim("Correlation_table_p005.txt")
